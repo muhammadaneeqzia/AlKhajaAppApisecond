@@ -11,7 +11,7 @@ server.get("/", async () => {
 });
 
 await server.register(cors, {
-  origin: true,
+  origin: "*",
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
   maxAge: 86400,
 });
