@@ -5,16 +5,27 @@ import "dotenv/config";
 
 const server = fastify({ logger: process.env.ENABLE_LOGGING === "true" });
 
-// ✅ Register CORS (updated allowed headers)
+// ✅ Comprehensive CORS configuration for Supabase
 await server.register(cors, {
-  origin: ["http://localhost:5173", "https://yourfrontenddomain.com"], // adjust to your domain
+  origin: ["http://localhost:5173", "https://yourfrontenddomain.com"],
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: [
     "Content-Type",
     "Authorization",
     "apikey",
-    "x-client-info",   // ✅ Added
-    "x-profile-key"    // ✅ Added (optional, some Supabase libs use this)
+    "x-client-info",
+    "x-profile-key",
+    "accept-profile",
+    "prefer",
+    "x-requested-with",
+    "range",           // For storage operations
+    "cache-control"    // Common header
+  ],
+  exposedHeaders: [
+    "Content-Range",
+    "X-Range",
+    "Content-Length",
+    "Content-Range"
   ],
   credentials: true,
   maxAge: 86400,
@@ -48,8 +59,8 @@ for (const path of paths) {
       rewriteHeaders: (headers, req) => ({
         ...headers,
         "Access-Control-Allow-Origin": req.headers.origin || "*",
-        "Access-Control-Allow-Headers":
-          "Content-Type, Authorization, apikey, x-client-info, x-profile-key",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info, x-profile-key, accept-profile, prefer, x-requested-with",
+        "Access-Control-Expose-Headers": "Content-Range, X-Range, Content-Length, Content-Range"
       }),
     },
   });
