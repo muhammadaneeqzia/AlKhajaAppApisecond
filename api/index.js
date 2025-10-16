@@ -5,11 +5,17 @@ import "dotenv/config";
 
 const server = fastify({ logger: process.env.ENABLE_LOGGING === "true" });
 
-// ✅ Register CORS (no need to manually define OPTIONS route)
+// ✅ Register CORS (updated allowed headers)
 await server.register(cors, {
-  origin: ["http://localhost:5173", "https://yourfrontenddomain.com"], // adjust domain
+  origin: ["http://localhost:5173", "https://yourfrontenddomain.com"], // adjust to your domain
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "apikey"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "apikey",
+    "x-client-info",   // ✅ Added
+    "x-profile-key"    // ✅ Added (optional, some Supabase libs use this)
+  ],
   credentials: true,
   maxAge: 86400,
 });
@@ -39,16 +45,17 @@ for (const path of paths) {
         apikey: supabaseAnonKey,
         authorization: `Bearer ${supabaseAnonKey}`,
       }),
-      // ✅ Add CORS headers to proxied responses
       rewriteHeaders: (headers, req) => ({
         ...headers,
         "Access-Control-Allow-Origin": req.headers.origin || "*",
+        "Access-Control-Allow-Headers":
+          "Content-Type, Authorization, apikey, x-client-info, x-profile-key",
       }),
     },
   });
 }
 
-// ✅ Required by Vercel
+// ✅ Required for Vercel
 export default async function handler(req, res) {
   await server.ready();
   server.server.emit("request", req, res);
