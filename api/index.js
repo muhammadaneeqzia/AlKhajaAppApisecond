@@ -7,7 +7,11 @@ const server = fastify({ logger: process.env.ENABLE_LOGGING === "true" });
 
 // ✅ Comprehensive CORS configuration for Supabase
 await server.register(cors, {
-  origin: ["http://localhost:5173", "https://yourfrontenddomain.com"],
+  origin: [
+    "http://localhost:5173", 
+    "https://yourfrontenddomain.com",
+    "https://cartreadev2backup.netlify.app"  // ✅ Added Netlify URL
+  ],
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: [
     "Content-Type",
