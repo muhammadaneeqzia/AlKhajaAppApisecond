@@ -5,31 +5,16 @@ import "dotenv/config";
 
 const server = fastify({ logger: process.env.ENABLE_LOGGING === "true" });
 
-// ✅ Add CORS properly (with explicit origin + preflight handling)
+// ✅ Register CORS (no need to manually define OPTIONS route)
 await server.register(cors, {
-  origin: ["http://localhost:5173", "https://yourfrontenddomain.com"], // 👈 whitelist origins
+  origin: ["http://localhost:5173", "https://yourfrontenddomain.com"], // adjust domain
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "apikey"],
   credentials: true,
   maxAge: 86400,
 });
 
-// ✅ Handle OPTIONS manually (for Vercel)
-server.options("/*", (req, reply) => {
-  reply
-    .header("Access-Control-Allow-Origin", req.headers.origin || "*")
-    .header(
-      "Access-Control-Allow-Methods",
-      "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS"
-    )
-    .header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, apikey"
-    )
-    .status(204)
-    .send();
-});
-
+// ✅ Root route for testing
 server.get("/", async () => {
   return { message: "Fastify Supabase Proxy is running!" };
 });
@@ -40,13 +25,7 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 if (!upstream) throw new Error("SUPABASE_URL not provided");
 if (!supabaseAnonKey) throw new Error("SUPABASE_ANON_KEY not provided");
 
-const paths = [
-  "/rest/v1",
-  "/auth/v1",
-  "/realtime/v1",
-  "/functions/v1",
-  "/storage/v1",
-];
+const paths = ["/rest/v1", "/auth/v1", "/realtime/v1", "/functions/v1", "/storage/v1"];
 
 for (const path of paths) {
   await server.register(proxy, {
@@ -60,6 +39,7 @@ for (const path of paths) {
         apikey: supabaseAnonKey,
         authorization: `Bearer ${supabaseAnonKey}`,
       }),
+      // ✅ Add CORS headers to proxied responses
       rewriteHeaders: (headers, req) => ({
         ...headers,
         "Access-Control-Allow-Origin": req.headers.origin || "*",
@@ -68,7 +48,7 @@ for (const path of paths) {
   });
 }
 
-// ✅ Required for Vercel
+// ✅ Required by Vercel
 export default async function handler(req, res) {
   await server.ready();
   server.server.emit("request", req, res);
